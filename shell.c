@@ -15,31 +15,36 @@
 
 /* The maximum length command */
 #define MAX_LINE 80
-
+void createForkedProcess(char *arguments);
 
 
 
 
 /**
- * count the number of arguments.
+ * Counts the number of arguments in the string.
+ * Returns an integer value of number of arguments in string.
  */
-int countArguments(const char *commandLine)
+int countArguments(const char *args)
 {
-	int num=0;
+	int count=0, len;
+	char lastC;
+	len = strlen(args);
+	if(len>0)
+	{
+		lastC = args[0];
+	}
+	for(int i=0; i<=len; i++)
+	{
+		if((args[i]==' '|| args[i]=='\0') && lastC !=' ')
+		{
+			count++;
+		}
+		lastC = args[i];
+	}
 
-
-	return num;
+	return count;
 }
 
-/**
- * given a pointer to a string, find the start of the next argument and the end of the argument,
- * malloc a new string of that length, and return it the new string.
- */
-const char *nextArgument(const char *currentString)
-{
-
-
-}
 
 
 /**
@@ -48,12 +53,23 @@ const char *nextArgument(const char *currentString)
  * nextArgument that number of times, storing the resulting pointer to a string into each element of the array.
  */
 
-char **buildCommandLine(const char *commandLine)
+void buildCommandLine(char *args)
 {
 
+	int numOfArgs = countArguments(args);
+	char *parsedArguments[numOfArgs];
+	char *token;
+	int i = 0;
 
+	token =strtok(args, " ");
+	while(token != NULL)
+	{
+		parsedArguments[i] = token;
+		i++;
+		token = strtok(NULL, " ");
+	}
 
-
+	createForkedProcess(*parsedArguments);
 }
 
 
@@ -65,7 +81,8 @@ void createForkedProcess(char *arguments)
 {
 
 	//Fork child process from parent
-	pid_t pid = fork( );
+	pid_t pid;
+	pid = fork();
 	//If pid goes negative, fork has failed. Throws error and exits.
 	if (pid < 0)
 	{
@@ -76,7 +93,7 @@ void createForkedProcess(char *arguments)
 	// pid is 0? a new process was created, and this copy is it
 	if (pid == 0)
 	{
-		execute(arguments);
+		execute(*arguments);
 		// this should never return - so if it doesn't, something bad happened.
 		abort( );
 	}
@@ -94,12 +111,16 @@ void createForkedProcess(char *arguments)
 /*
  * Takes the command and arguments and executes it.
  */
-void execute(const char *arguments)
+void execute(char *arguments)
 {
-	if(execvp(arguments[0], arguments) < 0)
-	{
-		perror("Could not execute command.");
-	}
+
+	execvp(arguments[0], arguments);
+
+
+//	if(execvp(arguments[0], arguments) < 0)
+//	{
+//		perror("Could not execute command.");
+//	}
 }
 
 
@@ -108,8 +129,9 @@ void execute(const char *arguments)
  */
 int main(void)
 {
-	char *args[MAX_LINE/2 + 1]; /* command line arguments */
+	char args[MAX_LINE/2 + 1]; /* command line arguments */
 	int should_run = 1; /* flag to determine when to exit program */
+	int background = 0;
 
 	while (should_run)
 	{
@@ -117,25 +139,30 @@ int main(void)
 		fflush(stdout);
 		fgets(args, MAX_LINE/2+1, stdin);
 
-		/*
-		 * If no text or too much text was inputed, throw an error.
-		 */
-		if(args[0] == NULL)
-		{
-			perror("An error occurred");
-		}
+		printf("User Input: %s\n", args);
+		buildCommandLine(args);
+
+
+
+//		/*
+//		 * If no text or too much text was inputed, throw an error.
+//		 */
+//		if(args[0] == '\0')
+//		{
+//			perror("An error occurred");
+//		}
 
 		/*
 		 * If user types in exit, set should_run to 0 and terminate.
 		 */
-		else if(strcasecmp(args, "exit") == 0)
-		{
-			should_run = 0;
-			return 0;
-		}
+//		if(args == "exit")
+//		{
+//			should_run = 0;
+//			return 0;
+//		}
 
-		//Create fork with command and arguments
-		createForkedProcess(args);
+//		//Create fork with command and arguments
+////		createForkedProcess(args);
 
 
 
