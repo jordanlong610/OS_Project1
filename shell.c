@@ -15,10 +15,54 @@
 
 /* The maximum length command */
 #define MAX_LINE 80
-void createForkedProcess(char *arguments);
 
 
 
+
+/*
+ * Takes the command and arguments and executes it.
+ */
+void execute(char **arguments)
+{
+	if(execvp(arguments[0], arguments) < 0)
+	{
+		perror("Could not execute command.");
+	}
+}
+
+
+/*
+ * Takes in the command and arguments and forks the parent process.
+ */
+void createForkedProcess(char **arguments)
+{
+
+	//Fork child process from parent
+	pid_t pid;
+	pid = fork();
+	//If pid goes negative, fork has failed. Throws error and exits.
+	if (pid < 0)
+	{
+		perror("Error: Fork failed.");
+		exit(-1);
+	}
+
+	// pid is 0? a new process was created, and this copy is it
+	if (pid == 0)
+	{
+		execute(arguments);
+		// this should never return - so if it doesn't, something bad happened.
+		abort( );
+	}
+
+	// pid is not 0? then it is the pid of the child
+	else
+	{
+		int status;
+		printf("Waiting for command to finish.\n");
+		waitpid(pid, &status, 0);
+	}
+}
 
 /**
  * Counts the number of arguments in the string.
@@ -57,7 +101,7 @@ void buildCommandLine(char *args)
 {
 
 	int numOfArgs = countArguments(args);
-	char *parsedArguments[numOfArgs];
+	char *parsedArguments[numOfArgs+1];
 	char *token;
 	int i = 0;
 
@@ -68,61 +112,9 @@ void buildCommandLine(char *args)
 		i++;
 		token = strtok(NULL, " ");
 	}
-
-	createForkedProcess(*parsedArguments);
+	parsedArguments[numOfArgs+1] = NULL;
+	createForkedProcess(parsedArguments);
 }
-
-
-
-/*
- * Takes in the command and arguments and forks the parent process.
- */
-void createForkedProcess(char *arguments)
-{
-
-	//Fork child process from parent
-	pid_t pid;
-	pid = fork();
-	//If pid goes negative, fork has failed. Throws error and exits.
-	if (pid < 0)
-	{
-		perror("Error: fork failed.");
-		exit(-1);
-	}
-
-	// pid is 0? a new process was created, and this copy is it
-	if (pid == 0)
-	{
-		execute(*arguments);
-		// this should never return - so if it doesn't, something bad happened.
-		abort( );
-	}
-
-	// pid is not 0? then it is the pid of the child
-	else
-	{
-		int status;
-		printf("Waiting for command to finish.\n");
-		waitpid(pid, &status, 0);
-		printf("This is still the parent: child exited with status %x\n", status);
-	}
-}
-
-/*
- * Takes the command and arguments and executes it.
- */
-void execute(char *arguments)
-{
-
-	execvp(arguments[0], arguments);
-
-
-//	if(execvp(arguments[0], arguments) < 0)
-//	{
-//		perror("Could not execute command.");
-//	}
-}
-
 
 /*
  * Main function for the Shell program.
@@ -133,21 +125,21 @@ int main(void)
 	int should_run = 1; /* flag to determine when to exit program */
 	int background = 0;
 
-	while (should_run)
+	while (should_run != 0)
 	{
 		printf("osh>");
 		fflush(stdout);
 		fgets(args, MAX_LINE/2+1, stdin);
 
-		printf("User Input: %s\n", args);
+//		printf("User Input: %s\n", args);
 		buildCommandLine(args);
 
 
 
-//		/*
-//		 * If no text or too much text was inputed, throw an error.
-//		 */
-//		if(args[0] == '\0')
+		/*
+		 * If no text or too much text was inputed, throw an error.
+		 */
+//		if(strchr(&args[0] == "\0"))
 //		{
 //			perror("An error occurred");
 //		}
@@ -155,22 +147,13 @@ int main(void)
 		/*
 		 * If user types in exit, set should_run to 0 and terminate.
 		 */
-//		if(args == "exit")
-//		{
-//			should_run = 0;
-//			return 0;
-//		}
-
-//		//Create fork with command and arguments
-////		createForkedProcess(args);
-
-
-
-
+		if(strcmp(&args[0], "exit") == 0)
+		{
+			should_run = 0;
+			return 0;
+		}
 
 	}
-
-
 
 	return 0;
 }
