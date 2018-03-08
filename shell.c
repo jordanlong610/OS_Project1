@@ -143,32 +143,32 @@ void buildCommandLine(char *args)
 	createForkedProcess(parsedArguments, wait);
 }
 
-
+/**
+ * Structure of the node used in the history linked list.
+ */
 struct node{
 	int id;
 	char *command;
 	struct node *next;
 };
 
+/*
+ * Initializes the linked list for history by creating a head node.
+ */
 void init(struct node **head)
 {
 	*head = malloc(sizeof(struct node));
-	(*head)->id = NULL;
+	(*head)->id = 0;
 	(*head)->command = NULL;
 	(*head)->next = NULL;
 }
 
+/*
+ * Inserts a command used to the front of the linked list.
+ * Then points the head at that node.
+ */
 void insert(struct node **head, int id, char *command)
 {
-//	struct node *current = *head;
-//	struct node *tmp;
-//
-//	do {
-//		tmp = current;
-//		current = current->next;
-//	} while (current);
-
-	/* create a new node after tmp */
 	struct node *new = malloc(sizeof(struct node));
 
 	new->next = NULL;
@@ -176,12 +176,8 @@ void insert(struct node **head, int id, char *command)
 	new->command = malloc(strlen(new)+1);
 	strcpy(new->command, command);
 
-
-//	tmp->next = new;
 	new->next = *head;
 	*head = new;
-
-
 }
 
 /*
@@ -253,7 +249,9 @@ int main(void)
 	struct node *head;
 	init(&head);
 
-
+	/*
+	 * While user has not typed exit the console will continue to run.
+	 */
 	while (should_run != 0)
 	{
 		printf("osh>");
@@ -281,13 +279,6 @@ int main(void)
 			print(head);
 		}
 
-
-
-
-
-
-
-
 		/*
 		 * If !! was entered, run the last successful command.
 		 */
@@ -303,30 +294,37 @@ int main(void)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		/*
 		 * If !# was entered, run that specific command.
 		 */
-//		else if(strcmp(&args[0], "history") == 0)
-//		{
-//			//History
-//			printf("Previously run commands\n");
-//		}
+		else if(args[0] == '!' && isdigit(args[1]))
+		{
+			/*
+			 * Remove the ! from the rest of the number.
+			 */
+			char *tok = strtok(token, "!");
+			tok = strtok(tok,"\n");
+//			printf("number typed: %s", tok);
+
+			struct node *temp = malloc(sizeof(struct node));
+			temp = find(&head, atoi(tok));
+			printf("ID from pointer %d\n", temp->id);
+			printf("Command from pointer %s\n", temp->command);
+			buildCommandLine(temp->command);
+
+
+		}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -349,9 +347,6 @@ int main(void)
 			historyCounter++;
 			buildCommandLine(token);
 		}
-
-
-
 	}
 
 	return 0;
