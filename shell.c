@@ -15,21 +15,7 @@
 
 /* The maximum length command */
 #define MAX_LINE 80
-
-///*
-// * Define history linked list
-// */
-//struct node{
-//	int key;
-//	char *data;
-//	struct node* next;
-//};
-//
-//struct node *head = NULL;
-//struct node *current = NULL;
-
 int historyCounter = 0;
-
 
 
 /*
@@ -42,7 +28,6 @@ void execute(char **arguments)
 		perror("Could not execute command.");
 	}
 }
-
 
 /*
  * Takes in the command and arguments and forks the parent process.
@@ -104,8 +89,6 @@ int countArguments(const char *args)
 
 	return count;
 }
-
-
 
 /**
  * given a command line string, call on countArguments to count the # of arguments present,
@@ -225,16 +208,6 @@ void print(struct node *head)
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 /*
  * Main function for the Shell program.
  */
@@ -286,13 +259,19 @@ int main(void)
 		{
 			struct node *temp = malloc(sizeof(struct node));
 			temp = find(&head, historyCounter-1);
-			printf("Running last successful command.\n");
-			printf("ID from pointer %d\n", temp->id);
-			printf("Command from pointer %s\n", temp->command);
-			buildCommandLine(temp->command);
+			if(temp == NULL)
+			{
+				printf("No commands in history\n");
+			}
+			else
+			{
+				printf("Running last successful command.\n");
+				printf("ID from pointer %d\n", temp->id);
+				printf("Command from pointer %s\n", temp->command);
+				buildCommandLine(temp->command);
+			}
+
 		}
-
-
 
 		/*
 		 * If !# was entered, run that specific command.
@@ -304,38 +283,26 @@ int main(void)
 			 */
 			char *tok = strtok(token, "!");
 			tok = strtok(tok,"\n");
-//			printf("number typed: %s", tok);
 
+			/*
+			 * Create a new node and copies the old command into it.
+			 * Executes it and then saves it to the beginning of the linked list.
+			 */
 			struct node *temp = malloc(sizeof(struct node));
 			temp = find(&head, atoi(tok));
-			printf("ID from pointer %d\n", temp->id);
-			printf("Command from pointer %s\n", temp->command);
-			buildCommandLine(temp->command);
-
+			if(temp == NULL)
+			{
+				printf("No such command in history\n");
+			}
+			else
+			{
+				printf("%s\n", temp->command);
+				insert(&head, historyCounter, temp->command);
+				historyCounter++;
+				buildCommandLine(temp->command);
+			}
 
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		/*
-		 * If no text or too much text was inputed, throw an error.
-		 */
-//		else if(strcmp(&args[0] == "\0") == 0)
-//		{
-//			perror("An error occurred");
-//		}
 
 		/*
 		 * If its a good command entered, build and run it.
@@ -351,5 +318,3 @@ int main(void)
 
 	return 0;
 }
-
-
