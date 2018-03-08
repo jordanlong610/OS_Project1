@@ -24,6 +24,8 @@
  */
 void execute(char **arguments)
 {
+//	printf("%s", arguments[0]);
+
 	if(execvp(arguments[0], arguments) < 0)
 	{
 		perror("Could not execute command.");
@@ -59,7 +61,7 @@ void createForkedProcess(char **arguments)
 	else
 	{
 		int status;
-		printf("Waiting for command to finish.\n");
+//		printf("Waiting for command to finish.\n");
 		waitpid(pid, &status, 0);
 	}
 }
@@ -101,18 +103,18 @@ void buildCommandLine(char *args)
 {
 
 	int numOfArgs = countArguments(args);
-	char *parsedArguments[numOfArgs+1];
+	char *parsedArguments[numOfArgs];
 	char *token;
 	int i = 0;
 
 	token =strtok(args, " ");
-	while(token != NULL)
+	while(i<numOfArgs)
 	{
 		parsedArguments[i] = token;
 		i++;
 		token = strtok(NULL, " ");
 	}
-	parsedArguments[numOfArgs+1] = NULL;
+	parsedArguments[numOfArgs] = NULL;
 	createForkedProcess(parsedArguments);
 }
 
@@ -131,8 +133,33 @@ int main(void)
 		fflush(stdout);
 		fgets(args, MAX_LINE/2+1, stdin);
 
-//		printf("User Input: %s\n", args);
-		buildCommandLine(args);
+		//Remove the newline character
+		char *token = strtok_r(args, "\n", &token);
+		printf("User Input: %s\n", token);
+
+		/*
+		 * If user types in exit, set should_run to 0 and terminate.
+		 */
+		if(strcmp(&args[0], "exit") == 0)
+		{
+			should_run = 0;
+			printf("Closing Shell.");
+		}
+		else if(strcmp(&args[0], "history") == 0)
+		{
+			//History
+			printf("Previously run commands\n");
+		}
+		else
+		{
+			//If good command, build and run it.
+			buildCommandLine(token);
+
+		}
+
+
+
+
 
 
 
@@ -144,14 +171,7 @@ int main(void)
 //			perror("An error occurred");
 //		}
 
-		/*
-		 * If user types in exit, set should_run to 0 and terminate.
-		 */
-		if(strcmp(&args[0], "exit") == 0)
-		{
-			should_run = 0;
-			return 0;
-		}
+
 
 	}
 
