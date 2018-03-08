@@ -233,7 +233,6 @@ int main(void)
 
 		//Remove the newline character
 		char *token = strtok_r(args, "\n", &token);
-		printf("User Input: %s\n", token);
 
 		/*
 		 * If user types in exit, set should_run to 0 and terminate.
@@ -265,9 +264,6 @@ int main(void)
 			}
 			else
 			{
-				printf("Running last successful command.\n");
-				printf("ID from pointer %d\n", temp->id);
-				printf("Command from pointer %s\n", temp->command);
 				buildCommandLine(temp->command);
 			}
 
