@@ -16,6 +16,19 @@
 /* The maximum length command */
 #define MAX_LINE 80
 
+///*
+// * Define history linked list
+// */
+//struct node{
+//	int key;
+//	char *data;
+//	struct node* next;
+//};
+//
+//struct node *head = NULL;
+//struct node *current = NULL;
+
+int historyCounter = 0;
 
 
 
@@ -24,8 +37,6 @@
  */
 void execute(char **arguments)
 {
-//	printf("%s", arguments[0]);
-
 	if(execvp(arguments[0], arguments) < 0)
 	{
 		perror("Could not execute command.");
@@ -36,10 +47,8 @@ void execute(char **arguments)
 /*
  * Takes in the command and arguments and forks the parent process.
  */
-void createForkedProcess(char **arguments)
+void createForkedProcess(char **arguments, int wait)
 {
-
-	//Fork child process from parent
 	pid_t pid;
 	pid = fork();
 	//If pid goes negative, fork has failed. Throws error and exits.
@@ -57,12 +66,17 @@ void createForkedProcess(char **arguments)
 		abort( );
 	}
 
-	// pid is not 0? then it is the pid of the child
+	/*
+	 * If pid is not 0? then it is the pid of the child.
+	 * If wait flag is 1, parent will wait for child to finish before exiting.
+	 */
 	else
 	{
 		int status;
-//		printf("Waiting for command to finish.\n");
-		waitpid(pid, &status, 0);
+		if(wait == 1)
+		{
+			waitpid(pid, &status, 0);
+		}
 	}
 }
 
@@ -105,18 +119,125 @@ void buildCommandLine(char *args)
 	int numOfArgs = countArguments(args);
 	char *parsedArguments[numOfArgs];
 	char *token;
-	int i = 0;
+	int wait, i = 0;
 
-	token =strtok(args, " ");
+	token = strtok(args, " ");
 	while(i<numOfArgs)
 	{
 		parsedArguments[i] = token;
 		i++;
 		token = strtok(NULL, " ");
 	}
+
+	/*
+	 * If & included in command, increment wait value to 1, so program knows to not wait.
+	 * Default: 0, Wait: 1
+	 */
+
+	if(*parsedArguments[i-1] == '&')
+	{
+		wait = 1;
+		parsedArguments[i-1] = NULL;
+	}
 	parsedArguments[numOfArgs] = NULL;
-	createForkedProcess(parsedArguments);
+	createForkedProcess(parsedArguments, wait);
 }
+
+
+struct node{
+	int id;
+	char *command;
+	struct node *next;
+};
+
+void init(struct node **head)
+{
+	*head = malloc(sizeof(struct node));
+	(*head)->id = NULL;
+	(*head)->command = NULL;
+	(*head)->next = NULL;
+}
+
+void insert(struct node **head, int id, char *command)
+{
+//	struct node *current = *head;
+//	struct node *tmp;
+//
+//	do {
+//		tmp = current;
+//		current = current->next;
+//	} while (current);
+
+	/* create a new node after tmp */
+	struct node *new = malloc(sizeof(struct node));
+
+	new->next = NULL;
+	new->id = id;
+	new->command = malloc(strlen(new)+1);
+	strcpy(new->command, command);
+
+
+//	tmp->next = new;
+	new->next = *head;
+	*head = new;
+
+
+}
+
+/*
+ * Find a command with its id. Return the node containing the id and command
+ */
+struct node* find(struct node **head, int id)
+{
+   struct node* current = *head;
+
+   //if list is empty
+   if(head == NULL)
+   {
+      return NULL;
+   }
+
+   while(current->id != id)
+   {
+      if(current->next == NULL)
+      {
+         return NULL;
+      }
+      else
+      {
+         current = current->next;
+      }
+   }
+   return current;
+}
+
+/*
+ * Prints the 10 most recent commands to the console.
+ */
+void print(struct node *head)
+{
+	int count = 0;
+	if ((head->next == NULL) && (count<10))
+	{
+		return;
+	}
+	else
+	{
+		printf("%d %s\n", head->id, head->command);
+		count++;
+		print(head->next);
+	}
+}
+
+
+
+
+
+
+
+
+
+
 
 /*
  * Main function for the Shell program.
@@ -125,7 +246,13 @@ int main(void)
 {
 	char args[MAX_LINE/2 + 1]; /* command line arguments */
 	int should_run = 1; /* flag to determine when to exit program */
-	int background = 0;
+
+	/*
+	 * Create and initialize the linked list for history.
+	 */
+	struct node *head;
+	init(&head);
+
 
 	while (should_run != 0)
 	{
@@ -145,17 +272,15 @@ int main(void)
 			should_run = 0;
 			printf("Closing Shell.");
 		}
+
+		/*
+		 * If history was entered, display history of commands.
+		 */
 		else if(strcmp(&args[0], "history") == 0)
 		{
-			//History
-			printf("Previously run commands\n");
+			print(head);
 		}
-		else
-		{
-			//If good command, build and run it.
-			buildCommandLine(token);
 
-		}
 
 
 
@@ -164,12 +289,66 @@ int main(void)
 
 
 		/*
+		 * If !! was entered, run the last successful command.
+		 */
+		else if(strcmp(token, "!!") == 0)
+		{
+			struct node *temp = malloc(sizeof(struct node));
+			temp = find(&head, historyCounter-1);
+			printf("Running last successful command.\n");
+			printf("ID from pointer %d\n", temp->id);
+			printf("Command from pointer %s\n", temp->command);
+			buildCommandLine(temp->command);
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		/*
+		 * If !# was entered, run that specific command.
+		 */
+//		else if(strcmp(&args[0], "history") == 0)
+//		{
+//			//History
+//			printf("Previously run commands\n");
+//		}
+
+
+
+
+		/*
 		 * If no text or too much text was inputed, throw an error.
 		 */
-//		if(strchr(&args[0] == "\0"))
+//		else if(strcmp(&args[0] == "\0") == 0)
 //		{
 //			perror("An error occurred");
 //		}
+
+		/*
+		 * If its a good command entered, build and run it.
+		 */
+		else
+		{
+			//Store parsed command as node in linked list
+			insert(&head, historyCounter, token);
+			historyCounter++;
+			buildCommandLine(token);
+		}
 
 
 
